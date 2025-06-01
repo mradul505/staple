@@ -189,6 +189,7 @@ https://raw.githubusercontent.com/your-repo/compensation-system/main/postman/pos
 ### 🚀 **Running Postman Tests**
 
 **Step 1: Set Environment**
+- Import collection from postman/postmanCollection.js
 ```bash
 # In Postman, create a new environment with:
 Variable: baseUrl
@@ -217,15 +218,6 @@ Value: http://localhost:4000
 # - Sorting (various fields)
 # - Pagination (offset/limit)
 # - Sparse fieldsets (custom fields)
-```
-
-**Step 5: Run Full Test Suite**
-```bash
-# Use Postman's Collection Runner:
-# 1. Click "Run Collection"
-# 2. Select all requests
-# 3. Click "Run Compensation Data Management API"
-# 4. Review results for 100% pass rate
 ```
 
 ## ✨ **Key Features**
@@ -394,53 +386,6 @@ curl -X POST \
   -H "Content-Type: application/json" \
   -d '{"query":"{ engineerCompensationByLocation { location count averageSalary } }"}' \
   http://localhost:4000/graphql
-```
-
-### Load Testing
-```bash
-# Install k6 for load testing
-npm install -g k6
-
-# Run load test
-k6 run tests/load-test.js
-```
-
-## 🔧 **Troubleshooting**
-
-### Common Issues
-
-#### ElasticSearch Memory Issues
-```bash
-# Increase Docker memory to 6GB+
-# Or reduce ES memory in docker-compose.yml:
-ES_JAVA_OPTS=-Xms256m -Xmx256m
-```
-
-#### PostgreSQL Connection Issues
-```bash
-# Check PostgreSQL health
-docker exec compensation-postgres pg_isready -U postgres
-
-# View PostgreSQL logs
-docker-compose logs postgres
-```
-
-#### Data Loading Issues
-```bash
-# Check CSV files exist
-ls -la csv/
-
-# Manually run data loader
-docker-compose run --rm db-init
-```
-
-### Performance Issues
-```bash
-# Check resource usage
-docker stats
-
-# Monitor service health
-watch -n 5 'curl -s http://localhost:4000/health | jq'
 ```
 
 ## 📈 **Scaling Considerations**
