@@ -1,0 +1,26 @@
+# Data Loader Dockerfile
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy source code and scripts
+COPY src ./src
+COPY scripts ./scripts
+COPY csv ./csv
+
+# Create logs directory
+RUN mkdir -p logs
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Run the data loader
+CMD ["node", "scripts/load-csv-data.js"] 

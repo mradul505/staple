@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compensation Data Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #2d3748;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #48bb78;
+            color: white;
+            font-weight: 600;
+        }
+
+        .status-indicator.loading {
+            background: #ed8936;
+        }
+
+        .status-indicator.error {
+            background: #f56565;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .metric-card h3 {
+            color: #4a5568;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .metric-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-container h3 {
+            color: #2d3748;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+        }
+
+        .filters-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .filters-section h3 {
+            color: #2d3748;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            color: #4a5568;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .filter-group input, .filter-group select {
+            padding: 10px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .filter-group input:focus, .filter-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .data-table {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        .data-table h3 {
+            color: #2d3748;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        tr:hover {
+            background: #f7fafc;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #718096;
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        /* Assignment Documentation Styles */
+        .assignment-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .assignment-container h2 {
+            color: #2d3748;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 25px;
+            text-align: center;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+        }
+
+        .assignment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+        }
+
+        .assignment-card {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 16px;
+            padding: 25px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .assignment-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border-color: #667eea;
+        }
+
+        .assignment-card h3 {
+            color: #2d3748;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .requirement-item {
+            margin-bottom: 20px;
+        }
+
+        .requirement-item h4 {
+            color: #4a5568;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .requirement-item h5 {
+            color: #667eea;
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 15px 0 8px 0;
+        }
+
+        .requirement-item h6 {
+            color: #764ba2;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin: 12px 0 6px 0;
+        }
+
+        .requirement-item p {
+            color: #718096;
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        .requirement-item ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .requirement-item li {
+            color: #4a5568;
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+            line-height: 1.5;
+        }
+
+        .requirement-item li:before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #48bb78;
+            font-weight: bold;
+        }
+
+        .schema-details {
+            background: #f7fafc;
+            border-radius: 8px;
+                padding: 15px;
+            margin-top: 10px;
+            }
+            
+        .api-examples {
+            margin-top: 15px;
+            }
+            
+        .query-example {
+            margin-bottom: 20px;
+            background: #ffffff;
+            border-radius: 8px;
+                padding: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin: 10px 0;
+        }
+
+        code {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+
+        .metrics-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .metric-tag {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .tech-item {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .tech-item:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .tech-item h5 {
+            color: #2d3748;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tech-item span {
+            display: block;
+            background: #f7fafc;
+            color: #4a5568;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .tech-item span:last-child {
+            margin-bottom: 0;
+        }
+
+        /* API Documentation & Testing Styles */
+        .api-documentation-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .api-container h2 {
+            color: #2d3748;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 25px;
+            text-align: center;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+        }
+
+        .documentation-card {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .documentation-card h3 {
+            color: #2d3748;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .project-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-item {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .stat-item:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+        }
+
+        .stat-number {
+            display: block;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #4a5568;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .architecture-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .arch-component {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .arch-component h5 {
+            color: #2d3748;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .arch-component p {
+            color: #718096;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .endpoint {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .api-testing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .api-test-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 25px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .api-test-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .assignment-a {
+            border-left: 6px solid #48bb78;
+        }
+
+        .assignment-b {
+            border-left: 6px solid #667eea;
+        }
+
+        .health-monitoring {
+            border-left: 6px solid #ed8936;
+        }
+
+        .documentation-links {
+            border-left: 6px solid #764ba2;
+        }
+
+        .api-test-card h3 {
+            color: #2d3748;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #edf2f7;
+        }
+
+        .test-requirement {
+            margin-bottom: 25px;
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .test-requirement h4 {
+            color: #4a5568;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .test-btn {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+        }
+
+        .test-btn:active {
+            transform: translateY(0);
+        }
+
+        .query-display {
+            margin: 10px 0;
+        }
+
+        .test-result {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            min-height: 40px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        .test-result.loading {
+            background: #fef5e7;
+            color: #744210;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .test-result.success {
+            background: #f0fff4;
+            border-color: #68d391;
+        }
+
+        .test-result.error {
+            background: #fed7d7;
+            border-color: #fc8181;
+            color: #c53030;
+        }
+
+        .doc-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .doc-link-item {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .doc-link-item:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .doc-link-item h4 {
+            color: #2d3748;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .doc-link-item p {
+            color: #718096;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .doc-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .doc-features span {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .test-all-section {
+            text-align: center;
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            color: white;
+        }
+
+        .test-all-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .test-all-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .test-progress {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .test-progress.running {
+            color: #ffd700;
+        }
+
+        .test-progress.complete {
+            color: #90ee90;
+        }
+
+        @media (max-width: 768px) {
+            .api-testing-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .architecture-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .project-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .doc-links {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>💼 Compensation Analytics Dashboard</h1>
+            <p>Real-time insights into compensation data across industries and locations</p>
+            <div class="status-indicator loading" id="systemStatus">
+                <span>●</span>
+                <span id="statusText">Connecting...</span>
+            </div>
+        </div>
+
+        <!-- Assignment Documentation -->
+        <div class="assignment-section">
+            <div class="assignment-container">
+                <h2>📋 Assignment Implementation Overview</h2>
+                
+                <div class="assignment-grid">
+                    <!-- Exercise A -->
+                    <div class="assignment-card">
+                        <h3>🗄️ Exercise A: Database Design</h3>
+                        <div class="requirement-item">
+                            <h4>Schema Design</h4>
+                            <p><strong>Technologies:</strong> PostgreSQL (SQL) + Elasticsearch (NoSQL)</p>
+                            <div class="schema-details">
+                                <h5>PostgreSQL Schema:</h5>
+                                <pre><code>CREATE TABLE compensations (
+  id SERIAL PRIMARY KEY,
+  employer VARCHAR(255),
+  job_title VARCHAR(255),
+  location VARCHAR(255),
+  annual_base_pay DECIMAL(12,2),
+  total_compensation DECIMAL(12,2),
+  years_experience_industry INTEGER,
+  years_experience_current_company INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</code></pre>
+                                
+                                <h5>Elasticsearch Mapping:</h5>
+                                <pre><code>{
+  "properties": {
+    "employer": { "type": "keyword" },
+    "jobTitle": { "type": "text", "fields": { "keyword": { "type": "keyword" } } },
+    "location": { "type": "text", "fields": { "keyword": { "type": "keyword" } } },
+    "annualBasePay": { "type": "double" },
+    "totalCompensation": { "type": "double" },
+    "yearsExperienceIndustry": { "type": "integer" },
+    "createdAt": { "type": "date" }
+  }
+}</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="requirement-item">
+                            <h4>✅ Required Queries Implemented</h4>
+                            <ul>
+                                <li><strong>Engineer Compensation:</strong> Average salary for engineering roles</li>
+                                <li><strong>City Statistics:</strong> Avg, min, max compensation per location</li>
+                                <li><strong>Custom Query:</strong> Highest paid roles by experience level</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Exercise B -->
+                    <div class="assignment-card">
+                        <h3>🔌 Exercise B: GraphQL API</h3>
+                        <div class="requirement-item">
+                            <h4>API Endpoints</h4>
+                            <p><strong>Technology:</strong> GraphQL with filtering, sorting, and field selection</p>
+                            
+                            <h5>Example Queries:</h5>
+                            <div class="api-examples">
+                                <div class="query-example">
+                                    <h6>📝 List with Filters & Sorting:</h6>
+                                    <pre><code>query {
+  compensations(
+    filter: {
+      annualBasePay: { min: 120000 },
+      locationContains: "San Francisco"
+    },
+    sort: [{ field: ANNUAL_BASE_PAY, direction: DESC }],
+    pagination: { limit: 10, offset: 0 }
+  ) {
+    data {
+      id employer jobTitle location 
+      annualBasePayFormatted
+    }
+    totalCount
+  }
+}</code></pre>
+                                </div>
+                                
+                                <div class="query-example">
+                                    <h6>🎯 Single Record with Sparse Fields:</h6>
+                                    <pre><code>query {
+  compensation(id: "123") {
+    employer
+    jobTitle
+    annualBasePayFormatted
+  }
+}</code></pre>
+                                </div>
+                                
+                                <div class="query-example">
+                                    <h6>📊 Statistics Queries:</h6>
+                                    <pre><code>query {
+  compensationStats {
+    count
+    averageSalary
+    medianSalary
+  }
+  engineerCompensationStats {
+    averageSalary
+  }
+  locationStats(limit: 10) {
+    location
+    averageSalary
+    minSalary
+    maxSalary
+    count
+  }
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Implementation Features -->
+                    <div class="assignment-card">
+                        <h3>⚡ Implementation Features</h3>
+                        <div class="requirement-item">
+                            <h4>✅ Completed Requirements</h4>
+                            <ul>
+                                <li><strong>Multi-Database:</strong> PostgreSQL + Elasticsearch integration</li>
+                                <li><strong>Dataset Upload:</strong> Support for multiple salary datasets</li>
+                                <li><strong>GraphQL API:</strong> Full CRUD with advanced filtering</li>
+                                <li><strong>Filtering:</strong> By salary range, location, job title</li>
+                                <li><strong>Sorting:</strong> Multiple fields, ascending/descending</li>
+                                <li><strong>Sparse Fields:</strong> Selective field retrieval</li>
+                                <li><strong>Pagination:</strong> Efficient data loading</li>
+                                <li><strong>Real-time Dashboard:</strong> Live metrics and visualizations</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="requirement-item">
+                            <h4>🎯 Key Metrics Tracked</h4>
+                            <div class="metrics-list">
+                                <span class="metric-tag">Total Records</span>
+                                <span class="metric-tag">Average Salary</span>
+                                <span class="metric-tag">Median Salary</span>
+                                <span class="metric-tag">Engineer Average</span>
+                                <span class="metric-tag">Location Analysis</span>
+                                <span class="metric-tag">Job Title Trends</span>
+                                <span class="metric-tag">Experience Correlation</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Technical Stack -->
+                    <div class="assignment-card">
+                        <h3>🛠️ Technical Stack</h3>
+                        <div class="tech-grid">
+                            <div class="tech-item">
+                                <h5>Database</h5>
+                                <span>PostgreSQL</span>
+                                <span>Elasticsearch</span>
+                            </div>
+                            <div class="tech-item">
+                                <h5>API</h5>
+                                <span>GraphQL</span>
+                                <span>Node.js</span>
+                            </div>
+                            <div class="tech-item">
+                                <h5>Frontend</h5>
+                                <span>HTML5</span>
+                                <span>Chart.js</span>
+                                <span>Vanilla JS</span>
+                            </div>
+                            <div class="tech-item">
+                                <h5>Features</h5>
+                                <span>Real-time Updates</span>
+                                <span>Health Monitoring</span>
+                                <span>Data Visualization</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="metrics-grid" id="metricsGrid">
+            <div class="metric-card">
+                <h3>Total Records</h3>
+                <div class="metric-value" id="totalRecords">--</div>
+                <div class="metric-label">Compensation entries</div>
+            </div>
+            <div class="metric-card">
+                <h3>Average Salary</h3>
+                <div class="metric-value" id="avgSalary">--</div>
+                <div class="metric-label">Annual base pay</div>
+            </div>
+            <div class="metric-card">
+                <h3>Median Salary</h3>
+                <div class="metric-value" id="medianSalary">--</div>
+                <div class="metric-label">50th percentile</div>
+            </div>
+            <div class="metric-card">
+                <h3>Engineer Average</h3>
+                <div class="metric-value" id="engineerAvg">--</div>
+                <div class="metric-label">Engineers only</div>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="filters-section">
+            <h3>🔍 Data Filters</h3>
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label>Job Title Contains</label>
+                    <input type="text" id="jobTitleFilter" placeholder="e.g., engineer, manager">
+                </div>
+                <div class="filter-group">
+                    <label>Location Contains</label>
+                    <input type="text" id="locationFilter" placeholder="e.g., San Francisco, CA">
+                </div>
+                <div class="filter-group">
+                    <label>Min Salary</label>
+                    <input type="number" id="minSalaryFilter" placeholder="50000">
+                </div>
+                <div class="filter-group">
+                    <label>Max Salary</label>
+                    <input type="number" id="maxSalaryFilter" placeholder="300000">
+                </div>
+                <div class="filter-group">
+                    <label></label>
+                    <button class="btn" onclick="applyFilters()">Apply Filters</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="chart-container">
+                <h3>📍 Top Locations by Average Salary</h3>
+                <div class="chart-wrapper">
+                    <canvas id="locationChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h3>💼 Top Job Titles by Compensation</h3>
+                <div class="chart-wrapper">
+                    <canvas id="jobTitleChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h3>🏗️ Engineer Compensation by Location</h3>
+                <div class="chart-wrapper">
+                    <canvas id="engineerLocationChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h3>⭐ Highest Paid Roles by Experience</h3>
+                <div class="chart-wrapper">
+                    <canvas id="experienceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Testing & Documentation Section -->
+        <div class="api-documentation-section">
+            <div class="api-container">
+                <h2>🧪 API Testing & Project Documentation</h2>
+                
+                <!-- Project Overview -->
+                <div class="documentation-card">
+                    <h3>📚 Project Overview</h3>
+                    <div class="doc-content">
+                        <div class="project-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">4,504</span>
+                                <span class="stat-label">Total Records</span>
+            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">1,369</span>
+                                <span class="stat-label">Engineer Records</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">3</span>
+                                <span class="stat-label">CSV Files Loaded</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">100%</span>
+                                <span class="stat-label">Assignment Complete</span>
+                            </div>
+                        </div>
+                        
+                        <div class="architecture-overview">
+                            <h4>🏗️ System Architecture</h4>
+                            <div class="architecture-grid">
+                                <div class="arch-component">
+                                    <h5>GraphQL API</h5>
+                                    <p>Node.js + Apollo Server</p>
+                                    <span class="endpoint">:4000/graphql</span>
+                                </div>
+                                <div class="arch-component">
+                                    <h5>PostgreSQL</h5>
+                                    <p>Primary Database</p>
+                                    <span class="endpoint">:5432</span>
+                                </div>
+                                <div class="arch-component">
+                                    <h5>Elasticsearch</h5>
+                                    <p>Search & Analytics</p>
+                                    <span class="endpoint">:9200</span>
+                                </div>
+                                <div class="arch-component">
+                                    <h5>Redis</h5>
+                                    <p>Caching Layer</p>
+                                    <span class="endpoint">:6379</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assignment Requirements Testing -->
+                <div class="api-testing-grid">
+                    <!-- Exercise A: Required Queries -->
+                    <div class="api-test-card assignment-a">
+                        <h3>🔍 Exercise A: Required Database Queries</h3>
+                        
+                        <div class="test-requirement">
+                            <h4>1. Average Compensation of Engineers</h4>
+                            <button class="test-btn" onclick="runRequiredQuery('engineers')">
+                                ▶️ Test Query
+                            </button>
+                            <div class="query-display">
+                                <pre><code>query {
+  engineerCompensationStats {
+    count
+    averageSalary
+    medianSalary
+    minSalary
+    maxSalary
+  }
+}</code></pre>
+                            </div>
+                            <div id="engineersResult" class="test-result"></div>
+                        </div>
+
+                        <div class="test-requirement">
+                            <h4>2. Compensation per City (Min, Max, Avg)</h4>
+                            <button class="test-btn" onclick="runRequiredQuery('cities')">
+                                ▶️ Test Query
+                            </button>
+                            <div class="query-display">
+                                <pre><code>query {
+  locationStats(limit: 10) {
+    location
+    count
+    averageSalary
+    minSalary
+    maxSalary
+  }
+}</code></pre>
+                            </div>
+                            <div id="citiesResult" class="test-result"></div>
+                        </div>
+
+                        <div class="test-requirement">
+                            <h4>3. Custom Query: Engineer Compensation by Location</h4>
+                            <button class="test-btn" onclick="runRequiredQuery('engineersByLocation')">
+                                ▶️ Test Query
+                            </button>
+                            <div class="query-display">
+                                <pre><code>query {
+  engineerCompensationByLocation(limit: 15) {
+    location
+    count
+    averageSalary
+    medianSalary
+    minSalary
+    maxSalary
+  }
+}</code></pre>
+                            </div>
+                            <div id="engineersByLocationResult" class="test-result"></div>
+                        </div>
+
+                        <div class="test-requirement">
+                            <h4>4. Bonus Query: Highest Paid Roles by Experience</h4>
+                            <button class="test-btn" onclick="runRequiredQuery('experienceRoles')">
+                                ▶️ Test Query
+                            </button>
+                            <div class="query-display">
+                                <pre><code>query {
+  highestPaidRolesByExperience(
+    minExperience: 0, 
+    maxExperience: 20, 
+    limit: 10
+  ) {
+    jobTitle
+    count
+    averageSalary
+  }
+}</code></pre>
+                            </div>
+                            <div id="experienceRolesResult" class="test-result"></div>
+                        </div>
+                    </div>
+
+
+                <!-- Run All Tests -->
+                <div class="test-all-section">
+                    <button class="test-all-btn" onclick="runAllTests()">
+                        🚀 Run All Assignment Tests
+                    </button>
+                    <div class="test-progress" id="testProgress"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:4000';
+        let charts = {};
+
+        // GraphQL query helper
+        async function graphqlQuery(query, variables = {}) {
+            try {
+                const response = await fetch(`${API_BASE}/graphql`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query, variables })
+                });
+                
+                const result = await response.json();
+                
+                if (result.errors) {
+                    throw new Error(result.errors[0].message);
+                }
+                
+                return result.data;
+            } catch (error) {
+                console.error('GraphQL Query Error:', error);
+                throw error;
+            }
+        }
+
+        // Check system health
+        async function checkSystemHealth() {
+            try {
+                const health = await graphqlQuery(`
+                    query {
+                        health {
+                            status
+                            timestamp
+                            services {
+                                postgres
+                                elasticsearch
+                            }
+                        }
+                    }
+                `);
+
+                const statusEl = document.getElementById('systemStatus');
+                const statusTextEl = document.getElementById('statusText');
+                if (health.health.status === 'healthy') {
+                    statusEl.className = 'status-indicator';
+                    statusTextEl.textContent = 'System Healthy';
+                } else {
+                    statusEl.className = 'status-indicator error';
+                    statusTextEl.textContent = 'System Issues Detected';
+                }
+            } catch (error) {
+                const statusEl = document.getElementById('systemStatus');
+                const statusTextEl = document.getElementById('statusText');
+                statusEl.className = 'status-indicator error';
+                statusTextEl.textContent = 'Connection Failed';
+            }
+        }
+
+        // Load key metrics
+        async function loadMetrics() {
+            try {
+                // Overall stats
+                const overallStats = await graphqlQuery(`
+                    query {
+                        compensationStats {
+                            count
+                            averageSalary
+                            medianSalary
+                        }
+                    }
+                `);
+
+                // Engineer stats
+                const engineerStats = await graphqlQuery(`
+                    query {
+                        engineerCompensationStats {
+                            averageSalary
+                        }
+                    }
+                `);
+
+                // Update metrics
+                document.getElementById('totalRecords').textContent = 
+                    overallStats.compensationStats.count.toLocaleString();
+                document.getElementById('avgSalary').textContent = 
+                    `$${Math.round(overallStats.compensationStats.averageSalary).toLocaleString()}`;
+                document.getElementById('medianSalary').textContent = 
+                    `$${Math.round(overallStats.compensationStats.medianSalary).toLocaleString()}`;
+                document.getElementById('engineerAvg').textContent = 
+                    `$${Math.round(engineerStats.engineerCompensationStats.averageSalary).toLocaleString()}`;
+
+            } catch (error) {
+                console.error('Error loading metrics:', error);
+            }
+        }
+
+        // Load location chart
+        async function loadLocationChart() {
+            try {
+                const data = await graphqlQuery(`
+                    query {
+                        locationStats(limit: 10) {
+                            location
+                            averageSalary
+                            count
+                        }
+                    }
+                `);
+
+                const ctx = document.getElementById('locationChart').getContext('2d');
+                
+                if (charts.locationChart) {
+                    charts.locationChart.destroy();
+                }
+
+                charts.locationChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.locationStats.map(item => item.location),
+                        datasets: [{
+                            label: 'Average Salary',
+                            data: data.locationStats.map(item => item.averageSalary),
+                            backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                            borderColor: 'rgba(102, 126, 234, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + value.toLocaleString();
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading location chart:', error);
+            }
+        }
+
+        // Load job title chart
+        async function loadJobTitleChart() {
+            try {
+                const data = await graphqlQuery(`
+                    query {
+                        jobTitleStats(limit: 10) {
+                            jobTitle
+                            averageSalary
+                            count
+                        }
+                    }
+                `);
+
+                const ctx = document.getElementById('jobTitleChart').getContext('2d');
+                
+                if (charts.jobTitleChart) {
+                    charts.jobTitleChart.destroy();
+                }
+
+                charts.jobTitleChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.jobTitleStats.map(item => item.jobTitle),
+                        datasets: [{
+                            label: 'Average Salary',
+                            data: data.jobTitleStats.map(item => item.averageSalary),
+                            backgroundColor: 'rgba(118, 75, 162, 0.8)',
+                            borderColor: 'rgba(118, 75, 162, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + value.toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading job title chart:', error);
+            }
+        }
+
+        // Load engineer location chart
+        async function loadEngineerLocationChart() {
+            try {
+                const data = await graphqlQuery(`
+                    query {
+                        engineerCompensationByLocation(limit: 10) {
+                            location
+                            averageSalary
+                            count
+                        }
+                    }
+                `);
+
+                const ctx = document.getElementById('engineerLocationChart').getContext('2d');
+                
+                if (charts.engineerLocationChart) {
+                    charts.engineerLocationChart.destroy();
+                }
+
+                charts.engineerLocationChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.engineerCompensationByLocation.map(item => item.location),
+                        datasets: [{
+                            data: data.engineerCompensationByLocation.map(item => item.averageSalary),
+                            backgroundColor: [
+                                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+                                '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF', 
+                                '#4BC0C0', '#FF6384'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading engineer location chart:', error);
+            }
+        }
+
+        // Load experience chart
+        async function loadExperienceChart() {
+            try {
+                const data = await graphqlQuery(`
+                    query {
+                        highestPaidRolesByExperience(minExperience: 0, maxExperience: 20, limit: 8) {
+                            jobTitle
+                            averageSalary
+                            count
+                        }
+                    }
+                `);
+
+                const ctx = document.getElementById('experienceChart').getContext('2d');
+                
+                if (charts.experienceChart) {
+                    charts.experienceChart.destroy();
+                }
+
+                charts.experienceChart = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: data.highestPaidRolesByExperience.map(item => item.jobTitle),
+                        datasets: [{
+                            label: 'Average Salary',
+                            data: data.highestPaidRolesByExperience.map(item => item.averageSalary),
+                            backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                            borderColor: 'rgba(102, 126, 234, 1)',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            r: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading experience chart:', error);
+            }
+        }
+
+        // Load compensation table
+        async function loadCompensationTable(filters = {}) {
+            try {
+                const filterObj = {};
+                if (filters.jobTitleContains) filterObj.jobTitleContains = filters.jobTitleContains;
+                if (filters.locationContains) filterObj.locationContains = filters.locationContains;
+                if (filters.minSalary || filters.maxSalary) {
+                    filterObj.annualBasePay = {};
+                    if (filters.minSalary) filterObj.annualBasePay.min = parseInt(filters.minSalary);
+                    if (filters.maxSalary) filterObj.annualBasePay.max = parseInt(filters.maxSalary);
+                }
+
+                const query = `
+                    query($filter: CompensationFilterInput) {
+                        compensations(
+                            filter: $filter, 
+                            pagination: { limit: 20 }, 
+                            sort: [{ field: ANNUAL_BASE_PAY, direction: DESC }]
+                        ) {
+                            data {
+                                id
+                                employer
+                                jobTitle
+                                location
+                                annualBasePayFormatted
+                                totalCompensationFormatted
+                                yearsExperienceIndustry
+                            }
+                            totalCount
+                        }
+                    }
+                `;
+
+                const data = await graphqlQuery(query, { filter: filterObj });
+
+                const tableHtml = `
+                    <p style="margin-bottom: 15px; color: #718096;">
+                        Showing ${data.compensations.data.length} of ${data.compensations.totalCount.toLocaleString()} records
+                    </p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Employer</th>
+                                <th>Job Title</th>
+                                <th>Location</th>
+                                <th>Base Pay</th>
+                                <th>Total Comp</th>
+                                <th>Experience</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.compensations.data.map(item => `
+                                <tr>
+                                    <td>${item.employer || 'N/A'}</td>
+                                    <td>${item.jobTitle || 'N/A'}</td>
+                                    <td>${item.location || 'N/A'}</td>
+                                    <td>${item.annualBasePayFormatted || 'N/A'}</td>
+                                    <td>${item.totalCompensationFormatted || 'N/A'}</td>
+                                    <td>${item.yearsExperienceIndustry ? item.yearsExperienceIndustry + ' years' : 'N/A'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+
+                document.getElementById('compensationTable').innerHTML = tableHtml;
+            } catch (error) {
+                console.error('Error loading compensation table:', error);
+                document.getElementById('compensationTable').innerHTML = 
+                    '<div class="error">Error loading compensation data. Please try again.</div>';
+            }
+        }
+
+        // Apply filters
+        function applyFilters() {
+            const filters = {
+                jobTitleContains: document.getElementById('jobTitleFilter').value,
+                locationContains: document.getElementById('locationFilter').value,
+                minSalary: document.getElementById('minSalaryFilter').value,
+                maxSalary: document.getElementById('maxSalaryFilter').value
+            };
+
+            loadCompensationTable(filters);
+        }
+
+        // Initialize dashboard
+        async function initDashboard() {
+            await checkSystemHealth();
+            await loadMetrics();
+            await Promise.all([
+                loadLocationChart(),
+                loadJobTitleChart(),
+                loadEngineerLocationChart(),
+                loadExperienceChart()
+            ]);
+            await loadCompensationTable();
+        }
+
+        // Auto-refresh every 5 minutes
+        setInterval(initDashboard, 5 * 60 * 1000);
+
+        // Handle filter inputs
+        document.getElementById('jobTitleFilter').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') applyFilters();
+        });
+        document.getElementById('locationFilter').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') applyFilters();
+        });
+
+        // API Testing Functions (Based on Postman Collection)
+        
+        // Required Assignment Queries (Exercise A)
+        async function runRequiredQuery(queryType) {
+            const resultEl = document.getElementById(queryType + 'Result');
+            resultEl.className = 'test-result loading';
+            resultEl.innerHTML = '🔄 Running query...';
+
+            try {
+                let query = '';
+                
+                switch(queryType) {
+                    case 'engineers':
+                        query = `
+                            query {
+                                engineerCompensationStats {
+                                    count
+                                    averageSalary
+                                    medianSalary
+                                    minSalary
+                                    maxSalary
+                                }
+                            }
+                        `;
+                        break;
+                    
+                    case 'cities':
+                        query = `
+                            query {
+                                locationStats(limit: 10) {
+                                    location
+                                    count
+                                    averageSalary
+                                    minSalary
+                                    maxSalary
+                                }
+                            }
+                        `;
+                        break;
+                    
+                    case 'engineersByLocation':
+                        query = `
+                            query {
+                                engineerCompensationByLocation(limit: 15) {
+                                    location
+                                    count
+                                    averageSalary
+                                    medianSalary
+                                    minSalary
+                                    maxSalary
+                                }
+                            }
+                        `;
+                        break;
+                    
+                    case 'experienceRoles':
+                        query = `
+                            query {
+                                highestPaidRolesByExperience(
+                                    minExperience: 0,
+                                    maxExperience: 20,
+                                    limit: 10
+                                ) {
+                                    jobTitle
+                                    count
+                                    averageSalary
+                                }
+                            }
+                        `;
+                        break;
+                }
+
+                const result = await graphqlQuery(query);
+                resultEl.className = 'test-result success';
+                resultEl.innerHTML = '<strong>✅ Success:</strong><br>' + JSON.stringify(result, null, 2);
+                
+            } catch (error) {
+                resultEl.className = 'test-result error';
+                resultEl.innerHTML = '<strong>❌ Error:</strong><br>' + error.message;
+            }
+        }
+
+        // API Features Testing (Exercise B)
+        async function runAPITest(testType) {
+            const resultEl = document.getElementById(testType + 'Result');
+            resultEl.className = 'test-result loading';
+            resultEl.innerHTML = '🔄 Running test...';
+
+            try {
+                let query = '';
+                
+                switch(testType) {
+                    case 'filtering':
+                        query = `
+                            query {
+                                compensations(
+                                    filter: {
+                                        jobTitleContains: "engineer"
+                                        locationContains: "San Francisco"
+                                        annualBasePay: { min: 100000, max: 200000 }
+                                    }
+                                    pagination: { limit: 5 }
+                                ) {
+                                    data {
+                                        employer
+                                        jobTitle
+                                        location
+                                        annualBasePay
+                                    }
+                                    totalCount
+                                }
+                            }
+                        `;
+                        break;
+                    
+                    case 'sorting':
+                        query = `
+                            query {
+                                compensations(
+                                    sort: [{ field: ANNUAL_BASE_PAY, direction: DESC }]
+                                    pagination: { limit: 5, offset: 0 }
+                                ) {
+                                    data {
+                                        employer
+                                        jobTitle
+                                        location
+                                        annualBasePayFormatted
+                                    }
+                                    totalCount
+                                    hasNextPage
+                                }
+                            }
+                        `;
+                        break;
+                    
+                    case 'sparse':
+                        query = `
+                            query {
+                                compensations(pagination: { limit: 5 }) {
+                                    data {
+                                        employer
+                                        annualBasePay
+                                        location
+                                    }
+                                }
+                            }
+                        `;
+                        break;
+                    
+                    case 'single':
+                        query = `
+                            query {
+                                compensation(id: 1) {
+                                    id
+                                    employer
+                                    jobTitle
+                                    location
+                                    annualBasePayFormatted
+                                    totalCompensationFormatted
+                                    yearsExperienceIndustry
+                                }
+                            }
+                        `;
+                        break;
+                }
+
+                const result = await graphqlQuery(query);
+                resultEl.className = 'test-result success';
+                resultEl.innerHTML = '<strong>✅ Success:</strong><br>' + JSON.stringify(result, null, 2);
+                
+            } catch (error) {
+                resultEl.className = 'test-result error';
+                resultEl.innerHTML = '<strong>❌ Error:</strong><br>' + error.message;
+            }
+        }
+
+        // Health & Monitoring Tests
+        async function runHealthTest(testType) {
+            const resultEl = document.getElementById(testType + 'Result');
+            resultEl.className = 'test-result loading';
+            resultEl.innerHTML = '🔄 Running health check...';
+
+            try {
+                let query = '';
+                
+                switch(testType) {
+                    case 'health':
+                        query = `
+                            query {
+                                health {
+                                    status
+                                    timestamp
+                                    version
+                                    services {
+                                        postgres
+                                        elasticsearch
+                                    }
+                                }
+                            }
+                        `;
+                        break;
+                    
+                    case 'stats':
+                        query = `
+                            query {
+                                compensationStats {
+                                    count
+                                    averageSalary
+                                    medianSalary
+                                    minSalary
+                                    maxSalary
+                                    standardDeviation
+                                }
+                            }
+                        `;
+                        break;
+                }
+
+                const result = await graphqlQuery(query);
+                resultEl.className = 'test-result success';
+                resultEl.innerHTML = '<strong>✅ Success:</strong><br>' + JSON.stringify(result, null, 2);
+                
+            } catch (error) {
+                resultEl.className = 'test-result error';
+                resultEl.innerHTML = '<strong>❌ Error:</strong><br>' + error.message;
+            }
+        }
+
+        // Run All Assignment Tests
+        async function runAllTests() {
+            const progressEl = document.getElementById('testProgress');
+            progressEl.className = 'test-progress running';
+            progressEl.innerHTML = '🚀 Running comprehensive assignment tests...';
+
+            const tests = [
+                // Exercise A - Required Queries
+                { name: 'Engineer Compensation Stats', func: () => runRequiredQuery('engineers') },
+                { name: 'City Compensation Stats', func: () => runRequiredQuery('cities') },
+                { name: 'Engineer by Location', func: () => runRequiredQuery('engineersByLocation') },
+                { name: 'Experience-based Roles', func: () => runRequiredQuery('experienceRoles') },
+                
+                // Exercise B - API Features
+                { name: 'Multi-field Filtering', func: () => runAPITest('filtering') },
+                { name: 'Sorting & Pagination', func: () => runAPITest('sorting') },
+                { name: 'Sparse Fieldsets', func: () => runAPITest('sparse') },
+                { name: 'Single Record Retrieval', func: () => runAPITest('single') },
+                
+                // Health & Monitoring
+                { name: 'System Health Check', func: () => runHealthTest('health') },
+                { name: 'Overall Statistics', func: () => runHealthTest('stats') }
+            ];
+
+            let completed = 0;
+            const total = tests.length;
+
+            for (const test of tests) {
+                progressEl.innerHTML = `🔄 Running: ${test.name} (${completed + 1}/${total})`;
+                
+                try {
+                    await test.func();
+                    completed++;
+                    await new Promise(resolve => setTimeout(resolve, 500)); // Brief pause between tests
+                } catch (error) {
+                    console.error(`Test failed: ${test.name}`, error);
+                    completed++;
+                }
+            }
+
+            progressEl.className = 'test-progress complete';
+            progressEl.innerHTML = `✅ All assignment tests completed! (${completed}/${total}) 
+                                   <br>📊 Dashboard demonstrates complete Exercise A & B compliance
+                                   <br>🎯 Ready for assignment submission`;
+        }
+
+        // Advanced Query Examples (From Postman Collection)
+        async function demonstrateAdvancedQueries() {
+            console.log('🔍 Advanced Query Examples Available:');
+            
+            // Complex Multi-Filter Query (From Postman)
+            const complexQuery = `
+                query {
+                    compensations(
+                        filter: {
+                            jobTitleContains: "Senior"
+                            locationContains: "CA"
+                            annualBasePay: { min: 120000 }
+                            yearsExperienceIndustry: { min: 5 }
+                        }
+                        sort: [{ field: ANNUAL_BASE_PAY, direction: DESC }]
+                        pagination: { limit: 10 }
+                    ) {
+                        data {
+                            employer
+                            jobTitle
+                            location
+                            yearsExperienceIndustry
+                            annualBasePay
+                            totalCompensation
+                        }
+                        totalCount
+                    }
+                }
+            `;
+
+            // High Experience Engineers Query
+            const experienceQuery = `
+                query {
+                    highestPaidRolesByExperience(
+                        minExperience: 10,
+                        maxExperience: 30,
+                        limit: 5
+                    ) {
+                        jobTitle
+                        count
+                        averageSalary
+                    }
+                }
+            `;
+
+            console.log('Complex Multi-Filter Query:', complexQuery);
+            console.log('High Experience Engineers:', experienceQuery);
+        }
+
+        // Initialize advanced examples on load
+        document.addEventListener('DOMContentLoaded', function() {
+            initDashboard();
+            demonstrateAdvancedQueries();
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,563 @@
+{
+  "info": {
+    "name": "Compensation Data Management API",
+    "description": "Comprehensive API collection for the compensation data management system with GraphQL queries, health checks, and analytics endpoints.",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Check if the API is healthy and responsive"
+          },
+          "response": []
+        },
+        {
+          "name": "Readiness Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ready",
+              "host": ["{{baseUrl}}"],
+              "path": ["ready"]
+            },
+            "description": "Check if all services (PostgreSQL, ElasticSearch) are connected"
+          },
+          "response": []
+        },
+        {
+          "name": "GraphQL Health",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ health { status timestamp version } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Check API health via GraphQL"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Required Assignment Queries",
+      "item": [
+        {
+          "name": "1. Average Compensation for Engineers",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ engineerCompensationStats { count averageSalary medianSalary minSalary maxSalary } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Get average compensation statistics specifically for engineers"
+          },
+          "response": []
+        },
+        {
+          "name": "2. Compensation Stats per City",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ locationStats(limit: 20) { location count averageSalary medianSalary minSalary maxSalary } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Get compensation statistics grouped by city/location"
+          },
+          "response": []
+        },
+        {
+          "name": "3. Engineer Compensation by Location",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ engineerCompensationByLocation(limit: 15) { location count averageSalary medianSalary minSalary maxSalary } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Get engineer compensation statistics by location (required query)"
+          },
+          "response": []
+        },
+        {
+          "name": "4. Custom Query - Highest Paid Roles by Experience",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ highestPaidRolesByExperience(minExperience: 0, maxExperience: 20, limit: 10) { jobTitle count averageSalary medianSalary minSalary maxSalary } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Custom analytical query showing highest paid roles filtered by experience range"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Data Queries",
+      "item": [
+        {
+          "name": "Get Single Compensation Record",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ compensation(id: 1) { id employer jobTitle location annualBasePay annualBasePayFormatted totalCompensation totalCompensationFormatted yearsExperienceIndustry } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Retrieve a single compensation record by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "List Compensations (Basic)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ compensations(pagination: { limit: 10, offset: 0 }) { data { id employer jobTitle location annualBasePay totalCompensation } totalCount hasNextPage hasPreviousPage } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Get a paginated list of compensation records"
+          },
+          "response": []
+        },
+        {
+          "name": "List Compensations with Filtering",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ compensations(filter: { jobTitleContains: \\\"engineer\\\", annualBasePay: { min: 80000, max: 200000 } }, pagination: { limit: 10 }) { data { id employer jobTitle location annualBasePay annualBasePayFormatted } totalCount } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Get compensation records with filters applied"
+          },
+          "response": []
+        },
+        {
+          "name": "List Compensations with Sorting",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ compensations(sort: [{ field: ANNUAL_BASE_PAY, direction: DESC }], pagination: { limit: 10 }) { data { id employer jobTitle location annualBasePay annualBasePayFormatted } totalCount } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Get compensation records sorted by salary (highest first)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Analytics Queries",
+      "item": [
+        {
+          "name": "Overall Compensation Statistics",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ compensationStats { count averageSalary medianSalary minSalary maxSalary q1Salary q3Salary standardDeviation averageExperience } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Get comprehensive compensation statistics across all records"
+          },
+          "response": []
+        },
+        {
+          "name": "Job Title Statistics",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ jobTitleStats(limit: 15) { jobTitle count averageSalary medianSalary minSalary maxSalary } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Get compensation statistics grouped by job title"
+          },
+          "response": []
+        },
+        {
+          "name": "Filtered Analytics - Tech Companies",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ compensationStats(filter: { industry: \\\"Technology\\\" }) { count averageSalary medianSalary minSalary maxSalary } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Get compensation statistics filtered by industry"
+          },
+          "response": []
+        },
+        {
+          "name": "High Experience Engineers",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ highestPaidRolesByExperience(minExperience: 10, maxExperience: 30, limit: 5) { jobTitle count averageSalary } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Get highest paid roles for experienced professionals (10-30 years)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Advanced Filtering Examples",
+      "item": [
+        {
+          "name": "Filter by Location",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ compensations(filter: { locationContains: \\\"San Francisco\\\" }, pagination: { limit: 10 }) { data { employer jobTitle location annualBasePay } totalCount } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Filter compensation records by location"
+          },
+          "response": []
+        },
+        {
+          "name": "Filter by Salary Range",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ compensations(filter: { annualBasePay: { min: 150000, max: 300000 } }, pagination: { limit: 15 }) { data { employer jobTitle location annualBasePay annualBasePayFormatted } totalCount } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Filter by salary range ($150k - $300k)"
+          },
+          "response": []
+        },
+        {
+          "name": "Filter by Experience Level",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ compensations(filter: { yearsExperienceIndustry: { min: 5, max: 10 } }, pagination: { limit: 10 }) { data { employer jobTitle yearsExperienceIndustry annualBasePay } totalCount } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Filter by experience level (5-10 years)"
+          },
+          "response": []
+        },
+        {
+          "name": "Complex Multi-Filter Query",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ compensations(filter: { jobTitleContains: \\\"Senior\\\", locationContains: \\\"CA\\\", annualBasePay: { min: 120000 }, yearsExperienceIndustry: { min: 5 } }, sort: [{ field: ANNUAL_BASE_PAY, direction: DESC }], pagination: { limit: 10 }) { data { employer jobTitle location yearsExperienceIndustry annualBasePay totalCompensation } totalCount } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Complex query combining multiple filters and sorting"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Sparse Fieldsets Examples",
+      "item": [
+        {
+          "name": "Minimal Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ compensations(pagination: { limit: 10 }) { data { employer annualBasePay } } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Query with minimal fields (sparse fieldset)"
+          },
+          "response": []
+        },
+        {
+          "name": "Summary Fields Only",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ compensations(pagination: { limit: 5 }) { data { jobTitle annualBasePayFormatted totalCompensationFormatted } } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Query with only formatted summary fields"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Handling Examples",
+      "item": [
+        {
+          "name": "Invalid Query Syntax",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ invalidField { nonExistentField } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Test error handling with invalid query"
+          },
+          "response": []
+        },
+        {
+          "name": "Non-existent Record",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ compensation(id: 999999) { id employer } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            },
+            "description": "Test querying for non-existent record"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+} 

@@ -1,0 +1,51 @@
+# Kibana Configuration for Compensation Data System
+
+# Server settings
+server.name: kibana
+server.host: 0.0.0.0
+server.port: 5601
+
+# Elasticsearch connection
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+elasticsearch.requestTimeout: 90000
+elasticsearch.shardTimeout: 30000
+
+# Security settings (disabled for development)
+elasticsearch.ssl.verificationMode: none
+xpack.security.enabled: false
+xpack.reporting.enabled: false
+xpack.ml.enabled: false
+
+# Monitoring settings
+monitoring.enabled: true
+monitoring.kibana.collection.enabled: false
+monitoring.ui.container.elasticsearch.enabled: true
+
+# Logging settings
+logging.appenders.file.fileName: /usr/share/kibana/logs/kibana.log
+logging.appenders.file.layout.type: json
+logging.level: info
+
+# UI settings
+map.includeElasticMapsService: false
+vis_type_vega.enableExternalUrls: true
+
+# Data plugin settings
+data.search.aggs.shardDelay.enabled: true
+
+# Dashboard settings
+xpack.canvas.enabled: true
+xpack.maps.enabled: true
+
+# Telemetry settings (disable for privacy)
+telemetry.enabled: false
+telemetry.optIn: false
+
+# Sample data
+xpack.encryptedSavedObjects.encryptionKey: "fhjskloppd678ehkdfdlliverpoolfcr"
+
+# Advanced settings
+newsfeed.enabled: false
+
+# New settings
+xpack.reporting.enabled: true 

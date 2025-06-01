@@ -1,0 +1,71 @@
+# ElasticSearch Configuration for Compensation Data System
+cluster.name: compensation-cluster
+node.name: elasticsearch
+
+# Network settings
+network.host: 0.0.0.0
+http.port: 9200
+transport.port: 9300
+
+# Discovery settings for single node
+discovery.type: single-node
+
+# Memory settings
+bootstrap.memory_lock: true
+
+# Security settings (disabled for development)
+xpack.security.enabled: false
+xpack.security.enrollment.enabled: false
+xpack.security.http.ssl.enabled: false
+xpack.security.transport.ssl.enabled: false
+xpack.ml.enabled: false
+
+# Monitoring settings
+xpack.monitoring.collection.enabled: true
+
+# Auto create indexes
+action.auto_create_index: true
+
+# Index settings
+index.number_of_shards: 1
+index.number_of_replicas: 0
+
+# Search settings
+search.max_buckets: 65536
+indices.query.bool.max_clause_count: 10000
+
+# Thread pool settings
+thread_pool:
+  search:
+    size: 13
+    queue_size: 1000
+  index:
+    size: 4
+    queue_size: 200
+
+# Cache settings
+indices.cache.cleanup_interval: 1m
+indices.fielddata.cache.size: 20%
+indices.requests.cache.size: 2%
+
+# Indexing settings
+indices.memory.index_buffer_size: 10%
+indices.memory.min_index_buffer_size: 96mb
+
+# Recovery settings
+cluster.routing.allocation.disk.threshold_enabled: true
+cluster.routing.allocation.disk.watermark.low: 85%
+cluster.routing.allocation.disk.watermark.high: 90%
+cluster.routing.allocation.disk.watermark.flood_stage: 95%
+
+# Logging settings
+logger.org.elasticsearch.discovery: WARN
+logger.org.elasticsearch.cluster.service: WARN
+logger.level: INFO
+
+# Index lifecycle management
+xpack.ilm.enabled: true
+
+# Performance settings
+thread_pool.write.queue_size: 200
+thread_pool.search.queue_size: 1000 

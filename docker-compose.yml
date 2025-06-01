@@ -1,0 +1,203 @@
+services:
+  # PostgreSQL Database with automatic initialization
+  postgres:
+    image: postgres:15-alpine
+    container_name: compensation-postgres
+    environment:
+      POSTGRES_DB: compensation_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./csv:/docker-entrypoint-initdb.d/csv
+    networks:
+      - compensation-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d compensation_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ElasticSearch with optimized configuration
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.9.0
+    container_name: compensation-elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=compensation-cluster
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - xpack.ml.enabled=false
+      - action.auto_create_index=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - compensation-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: compensation-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - compensation-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Database initialization service (runs once)
+  db-init:
+    build:
+      context: .
+      dockerfile: Dockerfile.init
+    container_name: compensation-db-init
+    environment:
+      - NODE_ENV=production
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=compensation_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123
+    volumes:
+      - ./csv:/app/csv
+      - ./src:/app/src
+      - ./scripts:/app/scripts
+    networks:
+      - compensation-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # ElasticSearch data streaming service
+  es-streamer:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamer
+    container_name: compensation-es-streamer
+    environment:
+      - NODE_ENV=production
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=compensation_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123
+      - ELASTICSEARCH_HOST=http://elasticsearch:9200
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    networks:
+      - compensation-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # Node.js API Service with fallback logic
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: compensation-api
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=compensation_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123
+      - ELASTICSEARCH_HOST=http://elasticsearch:9200
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ENABLE_FALLBACK=true
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./csv:/app/csv
+    networks:
+      - compensation-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:4000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    restart: unless-stopped
+
+  # Kibana for visualization
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.9.0
+    container_name: compensation-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=kibana
+      - SERVER_HOST=0.0.0.0
+      - xpack.security.enabled=false
+    ports:
+      - "5601:5601"
+    networks:
+      - compensation-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  compensation-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16 

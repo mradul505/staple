@@ -1,0 +1,37 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy application files
+COPY src ./src
+COPY scripts ./scripts
+
+# Create logs directory
+RUN mkdir -p logs
+
+# Install PostgreSQL client
+RUN apk add --no-cache postgresql-client curl
+
+# Install dumb-init for signal handling
+RUN apk add --no-cache dumb-init
+
+# Create wait scripts
+RUN echo '#!/bin/sh' > /app/wait-for-services.sh && \
+    echo 'echo "Waiting for PostgreSQL..."' >> /app/wait-for-services.sh && \
+    echo 'until pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER; do' >> /app/wait-for-services.sh && \
+    echo '  sleep 2' >> /app/wait-for-services.sh && \
+    echo 'done' >> /app/wait-for-services.sh && \
+    echo 'echo "PostgreSQL is ready!"' >> /app/wait-for-services.sh && \
+    echo 'echo "Waiting for ElasticSearch..."' >> /app/wait-for-services.sh && \
+    echo 'until curl -f $ELASTICSEARCH_HOST/_cluster/health; do' >> /app/wait-for-services.sh && \
+    echo '  sleep 5' >> /app/wait-for-services.sh && \
+    echo 'done' >> /app/wait-for-services.sh && \
+    echo 'echo "ElasticSearch is ready!"' >> /app/wait-for-services.sh && \
+    chmod +x /app/wait-for-services.sh
+
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["/bin/sh", "-c", "/app/wait-for-services.sh && node scripts/es-streamer.js"] 
